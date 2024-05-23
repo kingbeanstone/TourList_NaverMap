@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "380997441807",
+    "project_id": "tourlist-b3324",
+    "storage_bucket": "tourlist-b3324.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:380997441807:android:4a4038970b375f49bd467a",
+        "android_client_info": {
+          "package_name": "com.example.tourlist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBU0vJ4uwjgGANudDVAxwEdmRfAYnX8whQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
