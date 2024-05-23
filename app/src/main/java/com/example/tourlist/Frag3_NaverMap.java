@@ -43,7 +43,7 @@ import com.naver.maps.map.overlay.InfoWindow;
 import com.naver.maps.map.overlay.Marker;
 
 
-
+import com.naver.maps.map.overlay.Overlay;
 import com.naver.maps.map.util.FusedLocationSource;
 
 
@@ -131,6 +131,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
         mapView = view.findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
+
         locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
 
 
@@ -152,21 +153,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
 
 
-/*
 
-        //예림 코드. 이거 뭔지 몰겠 jhj
-        //loadSelectedPlaces();
-//        getCurrentLocation();
-
-        //현재 위치로 버튼.
-        Button btnCurrentLocation = view.findViewById(R.id.btnCurrentLocation);
-        btnCurrentLocation.setOnClickListener(v -> {
-            if (currentLocation != null) {
-                LatLng currentLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-                //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
-            }
-        });
-        //
 
         // jhj...
         mAuth = FirebaseAuth.getInstance();
@@ -190,19 +177,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
         //버튼들
 
-        //즐겨찾기 추가 버튼
-        Button favoriteButton = view.findViewById(R.id.btn_fav);
-        favoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (selectedMarker != null) {
-                    // 데이터베이스에 위도 경도 추가 함수...
-                    addFavoriteLocation(selectedMarker.getCaptionText(),selectedMarker.getPosition().latitude,selectedMarker.getPosition().longitude);
-                } else {
-                    Toast.makeText(getContext(), "먼저 마커를 클릭하여 위치를 선택하세요.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });*/
+
 
         return view;
 
@@ -222,11 +197,14 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                 && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
         }
+
+
         //지도 시작시, 현재 위치로.
 
         map.setLocationSource(locationSource);
         map.setLocationTrackingMode(LocationTrackingMode.Follow);
 
+        // 현재 위치로 버튼
         UiSettings uiSettings = map.getUiSettings();
         uiSettings.setLocationButtonEnabled(true);
 
@@ -234,8 +212,6 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
         setupPOI();
 
 
-
-        // 권한확인. 결과는 onRequestPermissionsResult 콜백 매서드 호출
 
 
 
@@ -254,122 +230,38 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
                 //선택한 위치에 파란 마커 생성및, 다시 클릭시 '선택된 위치'라고 박스 뜸.
 
-                currentMarker=new Marker();
-                currentMarker.setPosition(latLng);
-                currentMarker.setCaptionText("선택된 위치");
-                currentMarker.setIconTintColor(0x478EEC);
-                currentMarker.setMap(mMap);
-
-
+//                currentMarker=new Marker();
+//                currentMarker.setPosition(latLng);
+//                currentMarker.setCaptionText("선택된 위치");
+//                currentMarker.setIconTintColor(0x478EEC);
+//                currentMarker.setMap(mMap);
 
             }
-
-
 
         });
 
 
 
-        // 전체 마커 클릭 리스너를 설정
-/*        mMap.setOnClickListener(new NaverMap.OnMarkerClickListener() {
-                @Override
-                public boolean onMarkerClick(Marker marker) {
-                    selectedMarker = marker;
-
-                    if(currentMarker!=null ){
-                        String name=currentMarker.getTitle();
-                        if(!selectedMarker.getTitle().equals(name)) {
-                            currentMarker.remove();
-                            currentMarker
-                        }
-                    }
-                    // 이전에 생성된 POI 마커가 있다면 제거합니다.
-//                    if (poiMarker != null) {
-//                        poiMarker.remove();
-//                    }
-
-
-                    String name = marker.getTitle();
-//                    LatLng position = marker.getPosition();
-//                    double latitude = position.latitude;
-//                    double longitude = position.longitude;
-//
-//
-//                    selectedLocation=position;
-
-
-
-                    Toast.makeText(getContext(), "Selected Marker : " + name, Toast.LENGTH_SHORT).show();
-                    return false;
-                }
-        });*/
-
-        // POI 클릭 리스너 설정
-        /*mMap.setOnPoiClickListener(new GoogleMap.OnPoiClickListener() {
-                @Override
-                public void onPoiClick(PointOfInterest poi) {
-                    // 이전에 생성된 POI 마커가 있다면 제거합니다.
-                    if (poiMarker != null ) {
-                        if(!poiMarker.getTitle().equals(poi.name)) {
-                            poiMarker.remove();
-                        }
-                    }
-
-                    if (currentMarker != null) {
-                        currentMarker.remove();
-                    }
-
-                    {
-                        // 새로운 POI 마커를 추가합니다.
-                        poiMarker = mMap.addMarker(new MarkerOptions()
-                                .position(poi.latLng)
-                                .title(poi.name)
-                                .icon(BitmapDescriptorFactory.defaultMarker(200)).alpha(0.9f));
-                        Toast.makeText(getContext(), "Clicked: " + poi.name, Toast.LENGTH_SHORT).show();
-                    }
-
-                }
-        });*/
 
 
 
 
-        //구글맵 내위치.
-//        mMap.setMyLocationEnabled(true);
-//        mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
 
-        //맵 시작 될떄.   현재 위치 currentLocation에 저장.  그리고 현재 위치로 카메라.
-        /*fusedLocationClient.getLastLocation().addOnSuccessListener(getActivity(), location -> {
-            if (location != null) {
-                currentLocation = location;
-                LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-//                mMap.addMarker(new MarkerOptions().position(currentLatLng).title("Current Location"));
-//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
-
-//                addCurrentLocationMarker(currentLatLng);
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
-
-                // 선택된 장소에 마커 추가
-//                addMarkers();
-            } else {
-                Log.d(TAG, "Current location is null");
-            }
-        });*/
 
 
 
 
         // 공공데이터로부터 관광지 정보 받아오기
-//        loadTouristPlaces();
+        loadTouristPlaces();
 
     }
 
-    //???
 
 
 
 
+    // 이거 권한 요청하는 거라는데 뭐 안 뜨는데??
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,  @NonNull int[] grantResults) {
@@ -419,6 +311,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
     }
 
 
+    //테스트삼아 함 해봄.
     private void setupPOI() {
         // 예제 POI 추가
         LatLng poiLocation = new LatLng(37.5665, 126.9780); // 예제 좌표 (서울특별시청)
@@ -442,87 +335,11 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
 
 
-    /*
-    private void loadSelectedPlaces() {
-        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("selectedPlaces", Context.MODE_PRIVATE);
-        Set<String> set = sharedPreferences.getStringSet("selectedPlaces", null);
-        if (set != null) {
-            selectedPlaces = new ArrayList<>(set);
-            showToast("Selected places loaded");
-        }
-    }
-
-    */
 
 
-    //현재위치
-    /*private void getCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-            return;
-        }
-        Task<Location> locationResult = fusedLocationClient.getLastLocation();
-        locationResult.addOnCompleteListener(requireActivity(), task -> {
-            if (task.isSuccessful()) {
-                Location lastKnownLocation = task.getResult();
-                if (lastKnownLocation != null) {
-                    currentLocation = lastKnownLocation;
-
-                    // 현재 위치 마킹
-//                    addCurrentLocationMarker(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
-
-                    // 현재 위치를 기준으로 방향 받아오기
-                    double latitude = lastKnownLocation.getLatitude();
-                    double longitude = lastKnownLocation.getLongitude();
-                    getDirections(latitude, longitude);
-                    showToast("Current location retrieved");
-                } else {
-                    Log.d(TAG, "Last known location is null");
-                }
-            } else {
-                Log.d(TAG, "Task to get last location failed");
-            }
-        });
-    }*/
-
-    private void getDirections(double latitude, double longitude) {
-        // 방향 정보를 가져와서 지도에 표시
-        // 이전에 작성한 getDirections() 메서드의 내용을 여기에 복사해서 사용합니다.
-    }
 
 
-    /*private void addCurrentLocationMarker(LatLng currentLatLng) {
-        try {
-            mMap.addMarker(new MarkerOptions().position(currentLatLng).title("Current Location"));
-            Log.d(TAG, "Current location marker added at: " + currentLatLng.toString());
-        } catch (Exception e) {
-            Log.e(TAG, "Error adding current location marker: ", e);
-        }
-    }*/
 
-    /*private void addMarkers() {
-        for (String place : selectedPlaces) {
-            // 장소 이름을 위도와 경도로 변환하여 마커 추가
-            Geocoder geocoder = new Geocoder(requireContext(), Locale.getDefault());
-            try {
-                List<Address> addresses = geocoder.getFromLocationName(place, 1);
-                assert addresses != null;
-                if (!addresses.isEmpty()) {
-                    Address address = addresses.get(0);
-                    LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-                    mMap.addMarker(new MarkerOptions().position(latLng).title(place));
-                    Log.d(TAG, "Marker added for place: " + place + " at: " + latLng.toString());
-                } else {
-                    Log.d(TAG, "No addresses found for place: " + place);
-                }
-            } catch (IOException e) {
-                Log.e(TAG, "Error adding marker for place: " + place, e);
-            }
-        }
-    }*/
-
-
-/*
     private void loadTouristPlaces() {
         // 공공 데이터 API 엔드포인트
         String url = "https://www.data.go.kr/download/15021141/standard.do";
@@ -601,7 +418,30 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                     // 마커 추가
                     LatLng latLng = new LatLng(latitude, longitude);
                     try {
-                        mMap.addMarker(new MarkerOptions().position(latLng).title(placeName));
+
+
+                        Marker tourMarker = new Marker();
+
+
+                        tourMarker.setPosition(latLng);
+                        tourMarker.setCaptionText(placeName);
+                        tourMarker.setMap(mMap);
+
+                        tourMarker.setOnClickListener(new Marker.OnClickListener() {
+
+
+                            @Override
+                            public boolean onClick(@NonNull Overlay overlay) {
+                                Toast.makeText(getContext(), "마커 클릭됨 "+tourMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
+                                selectedMarker=tourMarker;
+                                return false;
+                            }
+                        });
+
+
+
+
+
                         Log.d(TAG, "Tourist place marker added for: " + placeName + " at: " + latLng.toString());
                     } catch (Exception e) {
                         Log.e(TAG, "Error adding marker for tourist place: " + placeName, e);
@@ -625,7 +465,6 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
     }
-    */
 
     //파이어베이스에.  위도 경도 문자열 추가.
     private void addFavoriteLocation(String place_name, double latitude, double longitude) {
