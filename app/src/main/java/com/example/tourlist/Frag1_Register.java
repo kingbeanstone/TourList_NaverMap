@@ -1,6 +1,7 @@
 package com.example.tourlist;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,6 +75,10 @@ public class Frag1_Register extends Fragment {
                             mDatabaseReference.child("UserAccount").child(user.getUid()).setValue(account);
 
                             Toast.makeText(getContext(), "회원가입에 성공하셨습니다.", Toast.LENGTH_SHORT).show();
+
+
+                            sendEmailVerification(user);
+
                         } else {
                             Toast.makeText(getContext(), "회원가입에 실패하셨습니다.", Toast.LENGTH_SHORT).show();
 
@@ -95,6 +100,9 @@ public class Frag1_Register extends Fragment {
                 Frag1_Login frag1_login = new Frag1_Login();
                 //main_layout에 homeFragment로 transaction 한다.
                 transaction.replace(R.id.main_frame, frag1_login);
+                // 백 스택에 추가합니다.
+                transaction.addToBackStack(null);
+
                 //꼭 commit을 해줘야 바뀐다.
                 transaction.commit();
             }
@@ -102,17 +110,27 @@ public class Frag1_Register extends Fragment {
 
 
 
-
-
-
-
-
-
-
-
-
-
         return view;
+    }
+
+    private void sendEmailVerification(FirebaseUser user){
+        if (user != null) {
+            user.sendEmailVerification()
+                    .addOnCompleteListener(getActivity(), task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(getContext(),
+                                    "Verification email sent to " + user.getEmail(),
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Log.e("TAG", "sendEmailVerification", task.getException());
+                            Toast.makeText(getContext(),
+                                    "Failed to send verification email.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+
+
     }
 
 

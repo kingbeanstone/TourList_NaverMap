@@ -1,5 +1,6 @@
 package com.example.tourlist;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +18,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -62,16 +64,29 @@ public class Frag1_Login extends Fragment {
                                     //로그인 성공
 //
 
+                                    FirebaseUser user = mAuth.getCurrentUser();
 
-                                    Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
-//
+                                    if (user != null && user.isEmailVerified()) {
+                                        // 이메일 인증 완료
+                                        Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
 
-                                    FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
-                                    Frag3_NaverMap frag3_NaverMap = new Frag3_NaverMap();
-                                    //main_layout에 homeFragment로 transaction 한다.
-                                    transaction.replace(R.id.main_frame, frag3_NaverMap);
-                                    //꼭 commit을 해줘야 바뀐다.
-                                    transaction.commit();
+                                        //로그인 성공
+
+                                        FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+                                        Frag3_NaverMap frag3_NaverMap = new Frag3_NaverMap();
+                                        //main_layout에 homeFragment로 transaction 한다.
+                                        transaction.replace(R.id.main_frame, frag3_NaverMap);
+
+                                        // 백 스택에 추가합니다.
+                                        transaction.addToBackStack(null);
+                                        //꼭 commit을 해줘야 바뀐다.
+                                        transaction.commit();
+
+                                    } else {
+                                        // 이메일 인증 미완료
+                                        Toast.makeText(getContext(), "Please verify your email address", Toast.LENGTH_SHORT).show();
+                                        mAuth.signOut();
+                                    }
 
 
                                 }
