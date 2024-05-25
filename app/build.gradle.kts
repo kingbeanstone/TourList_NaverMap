@@ -50,6 +50,7 @@ dependencies {
 
     implementation("com.naver.maps:map-sdk:3.18.0")
     implementation("com.android.volley:volley:1.2.1")
+
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
 
@@ -63,5 +64,17 @@ dependencies {
 
     // Also add the dependency for the Google Play services library and specify its version
     implementation("com.google.android.gms:play-services-auth:21.1.1")
+
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+
+
+    //gpt api sdk
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+    //장소 api sdk
+    implementation ("com.google.android.libraries.places:places:3.4.0")
+
+
 }
 

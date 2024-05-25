@@ -23,6 +23,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class Frag1_Login extends Fragment {
+    private String fragmentTag="Login";
+
+    public void setFragmentTag(String tag) {
+        this.fragmentTag = tag;
+    }
+
+    public String getFragmentTag() {
+        return fragmentTag;
+    }
 
     private View view;
 

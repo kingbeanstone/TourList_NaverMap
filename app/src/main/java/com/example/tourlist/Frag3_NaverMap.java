@@ -1,10 +1,16 @@
 package com.example.tourlist;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.PointF;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,8 +25,22 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 
-
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.NoConnectionError;
+import com.android.volley.ParseError;
+import com.android.volley.TimeoutError;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.AutocompletePrediction;
+import com.google.android.libraries.places.api.model.PhotoMetadata;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.FetchPhotoRequest;
+import com.google.android.libraries.places.api.net.FetchPlaceRequest;
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -57,6 +77,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -85,11 +106,21 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
+    private String fragmentTag="NaverMap";
+
+    public void setFragmentTag(String tag) {
+        this.fragmentTag = tag;
+    }
+
+    public String getFragmentTag() {
+        return fragmentTag;
+    }
 
 
     private View view;
@@ -120,11 +151,40 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
     private Marker poiMarker;
 
 
+
+
+/////////////////////////////////////////////////
+    private ArrayList<String> selectedPlaces = new ArrayList<>();
+    private FusedLocationProviderClient fusedLocationClient;
+
+
+
+
+
+
+    private PlacesClient placesClient;
+
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.frag3_navermap,container,false);
 
+
+        try {
+            // Places SDK 초기화
+            if (getActivity() != null) {
+                Context context = getActivity().getApplicationContext();
+                Places.initialize(context, "AIzaSyAkrFWzJeXx_k_k0g5vyuitlB8u6txNT98");
+                placesClient = Places.createClient(context);
+                Log.d(TAG, "Places SDK 초기화 성공");
+            } else {
+                Log.e(TAG, "getActivity()가 null입니다.");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Places SDK 초기화 실패", e);
+        }
 
 
         //지도 출력
@@ -334,8 +394,41 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
     }
 
 
+    private void addMarkers() {
+        for (String place : selectedPlaces) {
+            // 장소 이름을 위도와 경도로 변환하여 마커 추가
+            Geocoder geocoder = new Geocoder(requireContext(), Locale.getDefault());
+            try {
+                List<Address> addresses = geocoder.getFromLocationName(place, 1);
+                assert addresses != null;
+                if (!addresses.isEmpty()) {
+                    Address address = addresses.get(0);
+                    com.google.android.gms.maps.model.LatLng latLng = new com.google.android.gms.maps.model.LatLng(address.getLatitude(), address.getLongitude());
+//                    mMap.addMarker(new MarkerOptions().position(latLng).title(place));// google
+
+                    double lat=latLng.latitude;
+                    double longt=latLng.longitude;
+
+                    LatLng placeLocation = new LatLng(lat, longt);
 
 
+                    // 마커 추가
+                    Marker marker = new Marker();
+                    marker.setPosition(placeLocation);
+                    marker.setTag(place);
+                    marker.setMap(mMap);
+
+
+
+                    Log.d(TAG, "Marker added for place: " + place + " at: " + latLng.toString());
+                } else {
+                    Log.d(TAG, "No addresses found for place: " + place);
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "Error adding marker for place: " + place, e);
+            }
+        }
+    }
 
 
 
@@ -345,7 +438,6 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
         String url = "https://www.data.go.kr/download/15021141/standard.do";
         String apiKey = "M4q3CWc0OP6VctrSKmKMdcNJAY3CWOj5XmhvM7WF2GkyXgdKb2IpCrGO8LRWl9Wl9986gSB%2Bi6t29viXcyV58g%3D%3D"; // 여기에 공공 데이터에서 발급한 API 키를 입력합니다.
         String requestUrl = url + "?dataType=xml&ServiceKey=" + apiKey + "&pageNo=1&numOfRows=100";
-
 
         // API 요청
         StringRequest request = new StringRequest(Request.Method.GET, requestUrl,
@@ -365,48 +457,179 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                         }
                     }
                 },
+
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // 오류 처리
-                        Toast.makeText(getContext(), "Error loading tourist places", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error loading tourist places", error);
+                        if (error instanceof TimeoutError) {
+                            Log.e(TAG, "TimeoutError occurred while fetching tourist places.");
+                        } else if (error instanceof NoConnectionError) {
+                            Log.e(TAG, "NoConnectionError occurred while fetching tourist places.");
+                        } else if (error instanceof ParseError) {
+                            Log.e(TAG, "ParseError occurred while fetching tourist places.");
+                        } else {
+                            Log.e(TAG, "Unknown error occurred: " + error.getMessage());
+                        }
+                        showToast("Error fetching tourist places");
                     }
                 });
+
+        // 요청에 타임아웃 설정 추가
+        request.setRetryPolicy(new DefaultRetryPolicy(
+                10000, // 10초
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        ));
 
         // 요청을 큐에 추가
         RequestQueue queue = Volley.newRequestQueue(requireActivity());
         queue.add(request);
     }
 
+
+
+//    private void processXmlResponse(String response) {
+//        try {
+//            // XML 파싱
+//            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+//            XmlPullParser parser = factory.newPullParser();
+//            parser.setInput(new StringReader(response));
+//
+//            // XML 문서를 읽으면서 관광지 정보를 추출하고 지도에 마커를 추가
+//            int eventType = parser.getEventType();
+//            while (eventType != XmlPullParser.END_DOCUMENT) {
+//                if (eventType == XmlPullParser.START_TAG && parser.getName().equals("record")) {
+//                    // 각 record 태그마다 관광지 정보 추출
+//                    String placeName = "";
+//                    double latitude = 0.0;
+//                    double longitude = 0.0;
+//
+//                    while (!(eventType == XmlPullParser.END_TAG && parser.getName().equals("record"))) {
+//                        if (eventType == XmlPullParser.START_TAG) {
+//                            String tagName = parser.getName();
+//                            switch (tagName) {
+//                                case "관광지명":
+//                                    placeName = parser.nextText();
+//                                    break;
+//                                case "위도":
+//                                    latitude = Double.parseDouble(parser.nextText());
+//                                    break;
+//                                case "경도":
+//                                    longitude = Double.parseDouble(parser.nextText());
+//                                    break;
+//                                default:
+//                                    break;
+//                            }
+//                        }
+//                        eventType = parser.next();
+//                    }
+//
+//                    // 마커 추가
+//                    LatLng latLng = new LatLng(latitude, longitude);
+//                    try {
+//
+//
+//                        Marker tourMarker = new Marker();
+//
+//
+//                        tourMarker.setPosition(latLng);
+//                        tourMarker.setCaptionText(placeName);
+//                        tourMarker.setTag(placeName);
+//
+//                        tourMarker.setMap(mMap);
+//
+//                        tourMarker.setOnClickListener(new Marker.OnClickListener() {
+//
+//
+//                            @Override
+//                            public boolean onClick(@NonNull Overlay overlay) {
+//                                Toast.makeText(getContext(), "마커 클릭됨 "+tourMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
+//                                selectedMarker=tourMarker;
+//
+//                                TouristPlace place = (TouristPlace)tourMarker.getTag();
+//
+//                                Toast.makeText(getContext(),"asdfasd"+place,Toast.LENGTH_SHORT).show();
+//
+//                                if (place != null) {
+////                                     장소 검색을 통해 placeId 가져오기
+//
+//                                    searchPlaceIdByName(place.getPlaceName(), place);
+//                                }
+//                                return true; // true로 설정하여 기본 마커 클릭 동작을 유지하지 않음
+//
+//
+////                                return false;
+//                            }
+//
+//
+//                        });
+//
+//
+//
+//
+//
+//                        Log.d(TAG, "Tourist place marker added for: " + placeName + " at: " + latLng.toString());
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error adding marker for tourist place: " + placeName, e);
+//                    }
+//                }
+//                eventType = parser.next();
+//            }
+//        } catch (XmlPullParserException e) {
+//            // XML 파싱 예외 처리
+//            Log.e(TAG, "Error parsing XML response", e);
+//            showToast("Error parsing XML response");
+//        } catch (IOException e) {
+//            // IO 예외 처리
+//            Log.e(TAG, "IO Exception occurred", e);
+//            showToast("IO Exception occurred");
+//        }
+//    }
+
+
+
+
+
+
+
+
     private void processXmlResponse(String response) {
         try {
-            // XML 파싱
             XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = factory.newPullParser();
             parser.setInput(new StringReader(response));
 
-            // XML 문서를 읽으면서 관광지 정보를 추출하고 지도에 마커를 추가
             int eventType = parser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 if (eventType == XmlPullParser.START_TAG && parser.getName().equals("record")) {
-                    // 각 record 태그마다 관광지 정보 추출
-                    String placeName = "";
-                    double latitude = 0.0;
-                    double longitude = 0.0;
+                    final String[] placeName = {""};
+                    final double[] latitude = {0.0};
+                    final double[] longitude = {0.0};
+                    final String[] address = {""};
+                    final String[] description = {""};
+                    final String[] phone = {""};
 
                     while (!(eventType == XmlPullParser.END_TAG && parser.getName().equals("record"))) {
                         if (eventType == XmlPullParser.START_TAG) {
                             String tagName = parser.getName();
                             switch (tagName) {
                                 case "관광지명":
-                                    placeName = parser.nextText();
+                                    placeName[0] = parser.nextText();
                                     break;
                                 case "위도":
-                                    latitude = Double.parseDouble(parser.nextText());
+                                    latitude[0] = Double.parseDouble(parser.nextText());
                                     break;
                                 case "경도":
-                                    longitude = Double.parseDouble(parser.nextText());
+                                    longitude[0] = Double.parseDouble(parser.nextText());
+                                    break;
+                                case "소재지도로명주소":
+                                    address[0] = parser.nextText();
+                                    break;
+                                case "관광지소개":
+                                    description[0] = parser.nextText();
+                                    break;
+                                case "관리기관전화번호":
+                                    phone[0] = parser.nextText();
                                     break;
                                 default:
                                     break;
@@ -415,16 +638,50 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                         eventType = parser.next();
                     }
 
-                    // 마커 추가
-                    LatLng latLng = new LatLng(latitude, longitude);
+                    LatLng latLng = new LatLng(latitude[0], longitude[0]);
+
+
+//
+//                    Marker marker.setMap(new MarkerOptions()
+//                            .position(latLng)
+//                            .title(placeName[0])
+//                            .snippet(description[0])); // Description을 snippet에 저장
+//                    marker.setTag(new TouristPlace(placeName[0], latitude[0], longitude[0], address[0], description[0], phone[0])); // Tag에 객체 저장
+//
+
+
+
                     try {
 
 
                         Marker tourMarker = new Marker();
 
-
                         tourMarker.setPosition(latLng);
-                        tourMarker.setCaptionText(placeName);
+                        tourMarker.setCaptionText(placeName[0]);
+
+
+
+                        // 정보창 생성
+                        InfoWindow infoWindow = new InfoWindow();
+                        infoWindow.setAdapter(new InfoWindow.DefaultTextAdapter(getContext()) {
+                            @NonNull
+                            @Override
+                            public CharSequence getText(@NonNull InfoWindow infoWindow) {
+                                return description[0];
+                            }
+                        });
+
+// 마커 클릭 리스너 설정
+//                        marker.setOnClickListener(overlay -> {
+//                            infoWindow.open(marker);
+//                            return true;
+//                        });
+
+
+
+
+                        tourMarker.setTag(new TouristPlace(placeName[0], latitude[0], longitude[0], address[0], description[0], phone[0])); // Tag에 객체 저장
+
                         tourMarker.setMap(mMap);
 
                         tourMarker.setOnClickListener(new Marker.OnClickListener() {
@@ -434,8 +691,25 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                             public boolean onClick(@NonNull Overlay overlay) {
                                 Toast.makeText(getContext(), "마커 클릭됨 "+tourMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
                                 selectedMarker=tourMarker;
-                                return false;
+
+
+//                                infoWindow.open(tourMarker);
+                                TouristPlace place = (TouristPlace)tourMarker.getTag();
+
+                                Toast.makeText(getContext(),"asdfasd"+place,Toast.LENGTH_SHORT).show();
+
+                                if (place != null) {
+//                                     장소 검색을 통해 placeId 가져오기
+
+                                    searchPlaceIdByName(place.getPlaceName(), place);
+                                }
+                                return true; // true로 설정하여 기본 마커 클릭 동작을 유지하지 않음
+
+
+//                                return false;
                             }
+
+
                         });
 
 
@@ -446,25 +720,180 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                     } catch (Exception e) {
                         Log.e(TAG, "Error adding marker for tourist place: " + placeName, e);
                     }
+
+
+
+
+
+
+
+
+
+
+                    Log.d(TAG, "Tourist place marker added for: " + placeName[0] + " at: " + latLng.toString());
                 }
                 eventType = parser.next();
             }
-        } catch (XmlPullParserException e) {
-            // XML 파싱 예외 처리
+        } catch (XmlPullParserException | IOException e) {
             Log.e(TAG, "Error parsing XML response", e);
             showToast("Error parsing XML response");
-        } catch (IOException e) {
-            // IO 예외 처리
-            Log.e(TAG, "IO Exception occurred", e);
-            showToast("IO Exception occurred");
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private void searchPlaceIdByName(String placeName, TouristPlace place) {
+        FindAutocompletePredictionsRequest request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(placeName)
+                .build();
+
+        placesClient.findAutocompletePredictions(request).addOnSuccessListener((response) -> {
+            if (!response.getAutocompletePredictions().isEmpty()) {
+                AutocompletePrediction prediction = response.getAutocompletePredictions().get(0);
+                String placeId = prediction.getPlaceId();
+                Log.d(TAG, "Found placeId: " + placeId);
+                // 장소 세부 정보 가져오기
+                fetchPlaceDetails(placeId, place);
+            } else {
+                Log.d(TAG, "No predictions found for place: " + placeName);
+            }
+        }).addOnFailureListener((exception) -> {
+            Log.e(TAG, "Error finding place predictions: " + exception.getMessage());
+        });
+    }
+
+    private void fetchPlaceDetails(String placeId, TouristPlace place) {
+        List<Place.Field> placeFields = Arrays.asList(Place.Field.NAME, Place.Field.PHOTO_METADATAS);
+
+        // FetchPlaceRequest 객체 생성
+        FetchPlaceRequest request = FetchPlaceRequest.builder(placeId, placeFields).build();
+
+        placesClient.fetchPlace(request).addOnSuccessListener((response) -> {
+            Place fetchedPlace = response.getPlace();
+
+            // 장소 이름 가져오기
+            String name = fetchedPlace.getName();
+            Log.d(TAG, "Place name: " + name);
+
+            // 장소 사진 가져오기
+            if (fetchedPlace.getPhotoMetadatas() != null && !fetchedPlace.getPhotoMetadatas().isEmpty()) {
+                // 첫 번째 사진 메타데이터 가져오기
+                PhotoMetadata photoMetadata = fetchedPlace.getPhotoMetadatas().get(0);
+
+                // 사진을 가져오기 위한 요청
+                FetchPhotoRequest photoRequest = FetchPhotoRequest.builder(photoMetadata)
+                        .setMaxWidth(500) // 사진의 최대 너비
+                        .setMaxHeight(300) // 사진의 최대 높이
+                        .build();
+
+
+                Toast.makeText(getContext(),"sibal",Toast.LENGTH_SHORT).show();
+
+                placesClient.fetchPhoto(photoRequest).addOnSuccessListener((fetchPhotoResponse) -> {
+                    Bitmap bitmap = fetchPhotoResponse.getBitmap();
+                    if (bitmap != null) {
+                        // 사진 URL을 TouristPlace 객체에 설정
+                        place.setPhotoUrl(bitmapToBase64(bitmap));
+                        Log.d(TAG, "Photo URL set for place: " + place.getPlaceName());
+                    } else {
+                        Log.d(TAG, "Bitmap is null");
+                    }
+                    // TouristPlaceDetailActivity로 이동
+                    openTouristPlaceDetailActivity(place);
+                }).addOnFailureListener((exception) -> {
+                    Log.e(TAG, "Error fetching photo: " + exception.getMessage());
+                    // 사진이 없을 경우에도 TouristPlaceDetailActivity로 이동
+                    openTouristPlaceDetailActivity(place);
+                });
+            } else {
+                Log.d(TAG, "No photo metadata available");
+                // 사진이 없을 경우에도 TouristPlaceDetailActivity로 이동
+                openTouristPlaceDetailActivity(place);
+            }
+        }).addOnFailureListener((exception) -> {
+            Log.e(TAG, "Place not found: " + exception.getMessage());
+        });
+    }
+
+    private void openTouristPlaceDetailActivity(TouristPlace place) {
+        Toast.makeText(getContext(),"openTour~"+place.getPlaceName(),Toast.LENGTH_SHORT).show();
+        TouristPlaceDataHolder.getInstance().setPlace(place);
+        Intent intent = new Intent(getActivity(), TouristPlaceDetailActivity.class);
+        startActivity(intent);
+    }
+
+
+    private String bitmapToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        String encoded = Base64.encodeToString(byteArray, Base64.DEFAULT);
+        Log.d(TAG, "Encoded bitmap to Base64: " + encoded);
+        return encoded;
+    }
+
+
+
+
 
     private void showToast(String message) {
         if (getContext() != null) {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
     }
+
 
     //파이어베이스에.  위도 경도 문자열 추가.
     private void addFavoriteLocation(String place_name, double latitude, double longitude) {

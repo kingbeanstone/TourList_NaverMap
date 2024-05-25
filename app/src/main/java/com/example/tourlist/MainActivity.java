@@ -1,6 +1,7 @@
 package com.example.tourlist;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
@@ -23,12 +24,13 @@ import com.google.firebase.auth.FirebaseUser;
 //확인용
 public class MainActivity extends AppCompatActivity {
 
+
     private BottomNavigationView bottomNavigationView;
     private FragmentManager fm;
     private FragmentTransaction ft;
     private Frag1_Login frag1_login;
     private Frag1_Register frag1_register;
-    private Frag2_FavoriteList frag2;
+    private Frag2_FavoriteList frag2_favoriteList;
 
     private Frag3_NaverMap frag3_NaverMap;
     private Frag4_Empty frag4_Empty;
@@ -60,9 +62,10 @@ public class MainActivity extends AppCompatActivity {
 
         frag1_login = new Frag1_Login();
         frag1_register = new Frag1_Register();
-        frag2 = new Frag2_FavoriteList();
+        frag2_favoriteList = new Frag2_FavoriteList();
         frag3_NaverMap = new Frag3_NaverMap();
         frag4_Empty = new Frag4_Empty();
+
 
         bottomNavigationView = findViewById((R.id.bottomNavi));
         bottomNavigationView.setOnItemSelectedListener(new BottomNavigationView.OnItemSelectedListener() {
@@ -99,40 +102,63 @@ public class MainActivity extends AppCompatActivity {
                     return;  // 사용자가 직접 프래그먼트를 전환한 경우, 이후 처리를 생략
                 }
 
+                String tag=null;
+
 
                 Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.main_frame);
+
                 if (currentFragment != null) {
-                    String tag = currentFragment.getTag();
+                    // 프래그먼트 타입에 따라 캐스팅 후 커스텀 메서드 호출
+                    if (currentFragment instanceof Frag1_Login) {
+//                        Frag1_Login frag1 = (Frag1_Login) currentFragment;
+//                        tag=frag1.getFragmentTag();
+                        tag="Login";
+                    } else if (currentFragment instanceof Frag2_FavoriteList) {
+//                        Frag2_FavoriteList frag2= (Frag2_FavoriteList) currentFragment;
+//                        frag2.customMethod2();
+                        tag="Favorite";
+                    } else if (currentFragment instanceof Frag3_NaverMap) {
+//                        Frag3 frag3 = (Frag3) currentFragment;
+//                        frag3.customMethod3();
+                        tag="NaverMap";
+                    }
+                    else if (currentFragment instanceof Frag4_Empty) {
+//                        Frag3 frag3 = (Frag3) currentFragment;
+//                        frag3.customMethod3();
+                        tag="Empty";
+                    }
+
+
                     if (tag != null) {
                         if(tag.equals("Login")){
                             bottomNavigationView.setSelectedItemId(R.id.action_account);
+                            int backStackEntryCount = getSupportFragmentManager().getBackStackEntryCount();
+                            Log.d("BackStack", "Current Back Stack1 Entry Count: " + backStackEntryCount);
 
                         }
                         if(tag.equals("Favorite")){
                             bottomNavigationView.setSelectedItemId(R.id.action_memory);
+                            int backStackEntryCount = getSupportFragmentManager().getBackStackEntryCount();
+                            Log.d("BackStack", "Current Back Stack2 Entry Count: " + backStackEntryCount);
+
+
 
                         }
                         if(tag.equals("NaverMap")){
                             bottomNavigationView.setSelectedItemId(R.id.action_map);
 
+                            int backStackEntryCount = getSupportFragmentManager().getBackStackEntryCount();
+                            Log.d("BackStack", "Current Back Stack 3Entry Count: " + backStackEntryCount);
+
                         }
                         if(tag.equals("Empty")){
                             bottomNavigationView.setSelectedItemId(R.id.action_empty);
 
+                            int backStackEntryCount = getSupportFragmentManager().getBackStackEntryCount();
+                            Log.d("BackStack", "Current Back Stack4 Entry Count: " + backStackEntryCount);
+
                         }
-//                        switch (tag) {
-//                            case "Login":
-//                                bottomNavigationView.setSelectedItemId(R.id.action_account);
-//                                break;
-//                            case "Favorite":
-//                                bottomNavigationView.setSelectedItemId(R.id.action_memory);
-//                                break;
-//                            case "NaverMap":
-//                                bottomNavigationView.setSelectedItemId(R.id.action_map);
-//                                break;
-//                            case "Empty":
-//                                bottomNavigationView.setSelectedItemId(R.id.action_empty);
-//                                break;
+
 
                     }
                 }
@@ -153,32 +179,39 @@ public class MainActivity extends AppCompatActivity {
         ft = fm.beginTransaction();
         switch(n){
             case 0:
-                ft.replace(R.id.main_frame,frag1_login,"Login");
+                ft.replace(R.id.main_frame,frag1_login);
+//                ft.replace(R.id.main_frame,frag1_login,"Login");
                 // 백 스택에 추가합니다.
-                ft.addToBackStack("Login");
+//                ft.addToBackStack(null);
+//                ft.addToBackStack("Login");
                 ft.commit();
                 break;
 
             case 1:
-                ft.replace(R.id.main_frame,frag2,"Favorite");
+                ft.replace(R.id.main_frame,frag2_favoriteList);
+//                ft.replace(R.id.main_frame,frag2_favoriteList,"Favorite");
                 // 백 스택에 추가합니다.
-                ft.addToBackStack("Favorite");
+                ft.addToBackStack(null);
+//                ft.addToBackStack("Favorite");
                 ft.commit();
                 break;
 
 
             case 2:
                 ft.replace(R.id.main_frame, frag3_NaverMap);
-                ft.replace(R.id.main_frame, frag3_NaverMap,"NaverMap");
+//                ft.replace(R.id.main_frame, frag3_NaverMap,"NaverMap");
                 // 백 스택에 추가합니다.
-                ft.addToBackStack("NaverMap");
+                ft.addToBackStack(null);
+//                ft.addToBackStack("NaverMap");
                 ft.commit();
                 break;
 
             case 3:
-                ft.replace(R.id.main_frame, frag4_Empty,"Empty");
+                ft.replace(R.id.main_frame, frag4_Empty);
+//                ft.replace(R.id.main_frame, frag4_Empty,"Empty");
                 // 백 스택에 추가합니다.
-                ft.addToBackStack("Empty");
+                ft.addToBackStack(null);
+//                ft.addToBackStack("Empty");
                 ft.commit();
                 break;
         }
@@ -189,14 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-//    private void replaceFragment(Fragment fragment, String tag) {
-//        FragmentManager fragmentManager = getSupportFragmentManager();
-//        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-//
-//        fragmentTransaction.replace(R.id.main_frame, fragment, tag);
-//        fragmentTransaction.addToBackStack(tag);
-//        fragmentTransaction.commit();
-//    }
+
 
     @Override
     protected void onDestroy() {

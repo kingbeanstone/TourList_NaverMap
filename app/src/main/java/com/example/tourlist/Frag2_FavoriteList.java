@@ -28,6 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Frag2_FavoriteList extends Fragment {
+    private String fragmentTag="Favorite";
+
+    public void setFragmentTag(String tag) {
+        this.fragmentTag = tag;
+    }
+
+    public String getFragmentTag() {
+        return fragmentTag;
+    }
 
     private View view;
 
