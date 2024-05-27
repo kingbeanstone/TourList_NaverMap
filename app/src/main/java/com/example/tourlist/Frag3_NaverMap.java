@@ -82,7 +82,8 @@ import java.io.IOException;
 import java.io.StringReader;
 
 
-
+import android.net.Uri;
+import android.content.pm.ResolveInfo;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -105,11 +106,13 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.net.URLEncoder;
 
 public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
     private String fragmentTag="NaverMap";
@@ -133,8 +136,6 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
 
 
-
-
     private Button btnCurrentLocation;
     private Location currentLocation;
 
@@ -150,10 +151,20 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
     private Marker selectedMarker;
     private Marker poiMarker;
 
+    // 두 개의 마커를 저장할 변수
+    private Marker firstMarker = null;
+    private Marker secondMarker = null;
+    private boolean isSelectingMarkers = false; // 마커 선택 모드를 나타내는 변수
+    private Marker tour; // 클래스 멤버 변수로 선언
+    private LatLng destinationLatLng; // 추가
+    private LatLng sourceLatLng; // 추가
+    private String sourceName; // 추가
+    private String destinationName; // 추가
 
 
 
-/////////////////////////////////////////////////
+
+    /////////////////////////////////////////////////
     private ArrayList<String> selectedPlaces = new ArrayList<>();
     private FusedLocationProviderClient fusedLocationClient;
 
@@ -302,21 +313,64 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
 
 
 
-
-
-
-
-
-
-
-
+        // 마커 클릭 리스너
+        Button routeButton = view.findViewById(R.id.view_map_button); // 경로 버튼의 ID를 사용하여 버튼을 찾습니다.
+        routeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (firstMarker == null) {
+                    firstMarker = tour;
+                    Toast.makeText(getContext(), "첫 번째 마커 선택: " + firstMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
+                } else if (secondMarker == null) {
+                    secondMarker = tour;
+                    Toast.makeText(getContext(), "두 번째 마커 선택: " + secondMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
+                    // 선택된 두 마커의 이름을 가져와서 대중교통 길찾기 URL 생성
+                    String sourceName = firstMarker.getCaptionText();
+                    String destinationName = secondMarker.getCaptionText();
+                    LatLng sourceLatLng = firstMarker.getPosition();
+                    LatLng destinationLatLng = secondMarker.getPosition();
+                    String url = generateTransitRouteURL(sourceLatLng, sourceName, destinationLatLng, destinationName);
+                    // 생성된 URL로 네이버 지도 앱을 열기
+                    openNaverMapWithTransitRoute(url);
+                } else {
+                    // 이미 두 개의 마커가 선택되어 있음
+                    Toast.makeText(getContext(), "이미 두 개의 마커를 선택하셨습니다.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
 
         // 공공데이터로부터 관광지 정보 받아오기
         loadTouristPlaces();
 
     }
+    
+    private String generateTransitRouteURL(LatLng sourceLatLng, String sourceName, LatLng destinationLatLng, String destinationName) {
+        String url = "nmap://route/public?";
+        try {
+            url += "slat=" + sourceLatLng.latitude;
+            url += "&slng=" + sourceLatLng.longitude;
+            url += "&sname=" + URLEncoder.encode(sourceName, "UTF-8"); // 이름에 공백 등이 있을 수 있으므로 인코딩
+            url += "&dlat=" + destinationLatLng.latitude;
+            url += "&dlng=" + destinationLatLng.longitude;
+            url += "&dname=" + URLEncoder.encode(destinationName, "UTF-8"); // 이름에 공백 등이 있을 수 있으므로 인코딩
+            url += "&appname=com.example.tourlist"; // 앱 이름 추가
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return url;
+    }
 
+    private void openNaverMapWithTransitRoute(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        List<ResolveInfo> list = getActivity().getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+        if (list == null || list.isEmpty()) {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.nhn.android.nmap")));
+        } else {
+            startActivity(intent);
+        }
+    }
 
 
 
@@ -641,6 +695,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                     LatLng latLng = new LatLng(latitude[0], longitude[0]);
 
 
+
 //
 //                    Marker marker.setMap(new MarkerOptions()
 //                            .position(latLng)
@@ -692,6 +747,7 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
                                 Toast.makeText(getContext(), "마커 클릭됨 "+tourMarker.getCaptionText(), Toast.LENGTH_SHORT).show();
                                 selectedMarker=tourMarker;
 
+                                tour = tourMarker;
 
 //                                infoWindow.open(tourMarker);
                                 TouristPlace place = (TouristPlace)tourMarker.getTag();
@@ -739,59 +795,6 @@ public class Frag3_NaverMap extends Fragment implements OnMapReadyCallback {
             showToast("Error parsing XML response");
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     private void searchPlaceIdByName(String placeName, TouristPlace place) {

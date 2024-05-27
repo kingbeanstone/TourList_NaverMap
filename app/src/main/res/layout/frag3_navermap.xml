@@ -24,6 +24,14 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <Button
+        android:id="@+id/view_map_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="경로"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/btn_fav"
+        app:layout_constraintBottom_toTopOf="@id/btn_fav" />
 
 
 
